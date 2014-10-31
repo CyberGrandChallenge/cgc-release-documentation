@@ -1,0 +1,62 @@
+October 31, 2014: Scored Event #1 update Release
+	- Updated CQE/Scored Event API documentation and example scripts
+	  in response to competitor feedback.
+	- Improvements to insure deterministic poller processing.
+	- PoV/Poller XML parsing limited to ten seconds.
+	- Correct path to the DTD in generated service polls.
+	- CBs only dump core on a PoV signal.
+	- Easier instrumentation and debugging when running CBs in cb-test.
+	- Walkthrough for running Intel PIN on CGC Challenge Binaries.
+	- Added a readcgcef-minimal.py which does not depend on insecure libs.
+	- cgcef_verify re-implemented in python to reduce insecure dependencies.
+	- Allow more arbitrary mappings from the executable headers.
+	- Internal robustness improvements.
+	- Backport Linux security patches.
+
+October 2014: Scored Event #1 Release
+	- Documentation (http://github.com/CyberGrandChallenge/cgc-release-documentation)
+		- CQE/Scored Event API documentation and example script
+		- Updated Master Schedule to confirm scored event on Dec 2, 2014
+		- Newsletters:
+			- Interprocess Communication challenges newsletter
+			- C++ challenges newsletter
+		- Walk-throughs:
+			- How to compare the score of replacement CBs
+			- Refined guidance to authors submitting CBs
+			- Metrics to evaluate CB authors post-CQE
+	- Service poll generation improvements
+		- programmatic delays
+		- "finish" nodes to call at the end of an poll
+		- Variable instances
+		- Allow borrowing implemented algorithms from the CB itself
+		- More error reporting
+	- Challenge Binary Testing improvements
+		- Test utilities measure and report low fidelity CB performance
+		- Timeouts are no longer mis-reported as a PoV
+		- IPC CBs exit gracefully
+		- Testing speed improvements
+	- fdwait system call timeval truncated to multiples of 10ms
+	- New Challenge Binary Templates:
+		- LUNGE_00003: pipeline IPC template
+		- LUNGE_00004: producer-consumer IPC template
+	- Additional example challenge binaries
+		- EAGLE_00004: fix previously release example
+		- LUNGE_00005: Function pipeline (IPC example)
+		- TNETS_00002: Virtual pet (C++ example)
+
+August 2014: Challenge Binary Author Release
+	- Switched challenge binary compiler from GCC to CLANG
+	- Update Master Schedule to reflect new Scored Event date
+	- Update CQE Scoring documentation
+	- Update walk-throughs
+	- Added service poll generation utility
+	- Service template provides example usage of all system calls
+	- Added math intrinsics to libcgc.a
+	- Additional example challenge binaries
+		- CADET_00001: Simple Palindrome service
+		- EAGLE_00004: Tribute to DEFCON CTF (IPC example)
+		- KPRCA_00001: Gopher-like server
+		- KPRCA_00003: Image compression
+		- YAN01_00002: Tennis ball motion calculator
+
+June 2014: Original Cyber Grand Challenge Release
