@@ -8,6 +8,7 @@ import json
 import subprocess
 import sys
 import re
+import logging
 
 def verify(csid, pov, files):
     """
@@ -50,7 +51,7 @@ def verify(csid, pov, files):
         sys.exit("Error: %s returned %d" % (cpe.cmd, cpe.returncode))
 
 
-def package(csid, pov, files, passphrase):
+def package_aux(csid, pov, files, passphrase):
     """
     Packaging method for building a solution for submission. Both
     companion file and encrypted solution package are created
@@ -87,6 +88,38 @@ def package(csid, pov, files, passphrase):
 
     return (commitment_name, pkg_name_s)
 
+def package(creds, csid, pov, files):
+
+    logger = logging.getLogger(__name__)
+
+    # sanity checks
+    if not os.path.exists(creds):
+        logger.error("Error: cannot find creds file '%s'" % creds)
+        sys.exit("Error: cannot find creds file '%s'" % creds)
+
+    if not os.path.exists(pov):
+        logger.error("Error: cannot find PoV file '%s'" % pov)
+        sys.exit("Error: cannot find PoV file '%s'" % pov)
+
+    for f in files:
+        if not os.path.exists(f):
+            logger.error("Error:  cannot find replacement CB '%s'" % f)
+            sys.exit("Error:  cannot find replacement CB '%s'" % f)
+
+    # verify components and naming
+    verify(csid, pov, files)
+
+    # load credentials
+    creds = json.loads(open(creds, "r").read())
+
+    # package solution and generate commitment
+    (commitment_file, solution_file) = package_aux(csid, pov, files, creds['cqe_encryption_key'])
+
+    logger.info("Commitment file: %s" % commitment_file)
+    logger.info("Encrypted solution package: %s" % solution_file)
+
+    return (commitment_file, solution_file)
+    
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-c", "--creds", 
@@ -103,26 +136,4 @@ if __name__ == "__main__":
                         help="List of replacement CBs")
 
     args = parser.parse_args()
-
-    # sanity checks
-    if not os.path.exists(args.creds):
-        sys.exit("Error: cannot find creds file '%s'" % args.creds)
-
-    if not os.path.exists(args.pov):
-        sys.exit("Error: cannot find PoV file '%s'" % args.pov)
-
-    for f in args.files:
-        if not os.path.exists(f):
-            sys.exit("Error:  cannot find replacement CB '%s'" % f)
-
-    # verify components and naming
-    verify(args.csid, args.pov, args.files)
-
-    # load credentials
-    creds = json.loads(open(args.creds, "r").read())
-
-    # package solution and generate commitment
-    (commitment_file, solution_file) = package(args.csid, args.pov, args.files, creds['cqe_encryption_key'])
-    print "Commitment file:   " + commitment_file
-    print "Encrypted solution package: " + solution_file
-    
+    package(args.creds, args.csid, args.pov, args.files)
