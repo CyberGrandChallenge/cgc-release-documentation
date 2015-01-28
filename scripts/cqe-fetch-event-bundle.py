@@ -21,23 +21,22 @@ import argparse
 import json
 import sys
 import os
+import logging
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-c", "--creds", help="path to CGC credentials JSON file", type=str, required=True)
-    parser.add_argument("-e", "--event_name", help="Event name", type=str, required=True)
-    
-    args = parser.parse_args()
+def fetch(creds, event_name):
+
+    logger = logging.getLogger(__name__)
 
     # set filename based on event
-    filename = args.event_name + ".ar.gz.enc"
+    filename = event_name + ".ar.gz.enc"
 
     # sanity checks
-    if not os.path.exists(args.creds):
-        sys.exit("Error: cannot find creds file '%s'" % args.creds)
+    if not os.path.exists(creds):
+        logger.error("Error: cannot find creds file '%s'" % creds)
+        sys.exit("Error: cannot find creds file '%s'" % creds)
 
     # load credentials
-    creds = json.loads(open(args.creds, "r").read())
+    creds = json.loads(open(creds, "r").read())
 
     # connect to S3
     s3 = boto.connect_s3(creds['access_id'], creds['access_key'])
@@ -45,7 +44,15 @@ if __name__ == "__main__":
 
     # download the bundle
     k = Key(bucket)
-    k.key = args.event_name + "/" + filename
+    k.key = event_name + "/" + filename
     k.get_contents_to_filename(filename)
 
-    print "bundle downloaded to " + filename
+    logger.info("bundle downloaded to %s" % filename);
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-c", "--creds", help="path to CGC credentials JSON file", type=str, required=True)
+    parser.add_argument("-e", "--event_name", help="Event name", type=str, required=True)
+    
+    args = parser.parse_args()
+    fetch(args.creds, args.event_name)
