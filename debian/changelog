@@ -1,0 +1,15 @@
+cgc-release-documentation (4553-cqe) UNRELEASED; urgency=low
+
+  [ Vagrant User ]
+  * Update schedule and provide walkthrough for challenge binary authors
+
+  [ Brian Caswell ]
+  * build
+
+ -- Brian Caswell <bmc@lungetech.com>  Wed, 18 Mar 2015 17:21:11 +0000
+
+cgc-release-documentation (1.0) unstable; urgency=low
+
+  * Initial Release.
+
+ -- bmc <bmc@lungetech.com>  Thu, 17 Apr 2014 16:45:08 -0400
