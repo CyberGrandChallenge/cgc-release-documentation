@@ -1,0 +1,17 @@
+Source: cgc-release-documentation
+Section: devel
+Priority: extra
+Maintainer: bmc <bmc@lungetech.com>
+Build-Depends: debhelper (>= 8.0.0)
+Standards-Version: 3.9.3
+Homepage: http://www.darpa.mil/cybergrandchallenge/
+
+Package: cgc-release-documentation
+Architecture: all
+Depends: ${misc:Depends}
+Description: Cyber Grand Challenge CGCOS documentation
+ Documentation for DARPA's Cyber Grand Challenge resources that are whole-system
+ wide, rather than specific to an individual package.
+ .
+ These resources should begin to inform CB authors and CRS developers as to the
+ basics of CGC.

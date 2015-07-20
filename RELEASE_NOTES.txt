@@ -1,0 +1,144 @@
+July, 2015: Initial CFE Release
+	- Walk-throughs have been updated
+		- Running the VM
+		- Virtual Competition
+		- Understanding CFE PoVs
+		- Understanding Poll Generators
+		- Using the Network Appliance
+		- Building a CB
+		- Debugging a CB
+		- Testing a CB
+		- Submitting a CB - instructions to CB authors
+	- CRS Team Interface API documentation
+	- A Virtual Competition has been provided as a CFE simulator until
+	  such a time as the CGC team completes and offers competitor access
+	  to the competition infrastructure.
+	- Add new CFE PoV mechanisms
+		- Type 1: Register Set PoV
+		- Type 2: Memory Disclosure PoV
+	- Support Autonomous Network Defense AoE
+	- Service polls have been extended to allow deeper interactions and
+	  have a priori knowledge of the random contents of the CB's flag page
+	  per poll.
+	- Example CFE Challenge Binaries:
+		- CADET_00003: Palindrome service derived from CADET_00001
+		- EAGLE_00005: A Hangman-like game
+	- A cb-acceptance tool to conduct automatic IV&V of submitted CBs
+
+July, 2015: CQE Release
+	- Publish source code of the Challenge Binaries used in CQE
+
+April, 2015: Scored Event 2 Release
+	- Source code to Challenge Binaries used in SE-2
+	- Mapping of CBs to event identifiers
+	- Clarify backup event submission plan in cgc-qualifier-event-api
+          walkthrough
+	- Make poll generator create file names consistent with documentation
+	- Fix DECREE interaction with Linux capabilities
+
+March, 2015: Pre Scored Event 2 Release
+	- Update all CQE event scripts:
+	  - Note that dashes in the filenames have been replaced with
+	    underscores to allow for easier python imports
+	  - Method to verify that a local submission matches the submission
+	    received by Amazon S3
+	- The cgc-qualifier-event-api walk-through has been updated to reflect
+	  the above script changes.
+	- The cgc-qualifier-event-api walk-through now documents a backup
+	  event submission mechanism in the case of an Amazon S3 outage.
+	- cb-server utility now uses higher precision task clock to assist in
+	  measuring performance score especially when service polls completed
+	  more quickly than the 10ms scheduler clock
+	- Update the scoring-cbs walkthrough to reflect the use of the higher
+	  precision task clock performance metric
+	- Release missing CROMU_00007 CB from Scored Event 1
+	- Stricter cb-server socket initialization to remove a
+	  non-deterministic corner case in performance calculation on a
+	  loaded system
+	- Various optimizations to drastically speed up cb-test
+	- Added a walk-through for using ptrace to perform instruction tracing
+	  of a challenge binary.
+	- strace bug fixes:
+	  - zero byte allocations
+	  - process args on system call entry
+
+February, 2015: Post Scored Event Release
+	- Embed CGC Extended Application into every challenge binary
+	  specifically to include the event participation agreement.
+	- Embed the DECREE debian package listing into every challenge binary
+	  to allow for future repeatable testing.
+	- Verify PoVs' and polls' XML start tag, DOCTYPE and DTD path
+	- Add cqe-verify-solution-package script to validate an event
+	  submission
+	- Fix typo in cgc-qualifier-event-api walkthrough and bug in the
+	  associated cqe-submit-solution.py script
+	- Update scoring-cbs walkthrough
+	- Include a Newsletter on cyber security Capture-the-Flag tournaments
+	  on which CGC is based
+	- Service poll generator graphs percentage of polls which visit a node
+	- Update allocate() man page
+	- Better CB memory usage reporting and scoring walkthrough
+	- Proper PCRE grouping in service polls and PoVs
+
+October 31, 2014: Scored Event #1 update Release
+	- Updated CQE/Scored Event API documentation and example scripts
+	  in response to competitor feedback.
+	- Improvements to insure deterministic poller processing.
+	- PoV/Poller XML parsing limited to ten seconds.
+	- Correct path to the DTD in generated service polls.
+	- CBs only dump core on a PoV signal.
+	- Easier instrumentation and debugging when running CBs in cb-test.
+	- Walkthrough for running Intel PIN on CGC Challenge Binaries.
+	- Added a readcgcef-minimal.py which does not depend on insecure libs.
+	- cgcef_verify re-implemented in python to reduce insecure dependencies.
+	- Allow more arbitrary mappings from the executable headers.
+	- Internal robustness improvements.
+	- Backport Linux security patches.
+
+October 2014: Scored Event #1 Release
+	- Documentation (http://github.com/CyberGrandChallenge/cgc-release-documentation)
+		- CQE/Scored Event API documentation and example script
+		- Updated Master Schedule to confirm scored event on Dec 2, 2014
+		- Newsletters:
+			- Interprocess Communication challenges newsletter
+			- C++ challenges newsletter
+		- Walk-throughs:
+			- How to compare the score of replacement CBs
+			- Refined guidance to authors submitting CBs
+			- Metrics to evaluate CB authors post-CQE
+	- Service poll generation improvements
+		- programmatic delays
+		- "finish" nodes to call at the end of an poll
+		- Variable instances
+		- Allow borrowing implemented algorithms from the CB itself
+		- More error reporting
+	- Challenge Binary Testing improvements
+		- Test utilities measure and report low fidelity CB performance
+		- Timeouts are no longer mis-reported as a PoV
+		- IPC CBs exit gracefully
+		- Testing speed improvements
+	- fdwait system call timeval truncated to multiples of 10ms
+	- New Challenge Binary Templates:
+		- LUNGE_00003: pipeline IPC template
+		- LUNGE_00004: producer-consumer IPC template
+	- Additional example challenge binaries
+		- EAGLE_00004: fix previously release example
+		- LUNGE_00005: Function pipeline (IPC example)
+		- TNETS_00002: Virtual pet (C++ example)
+
+August 2014: Challenge Binary Author Release
+	- Switched challenge binary compiler from GCC to CLANG
+	- Update Master Schedule to reflect new Scored Event date
+	- Update CQE Scoring documentation
+	- Update walk-throughs
+	- Added service poll generation utility
+	- Service template provides example usage of all system calls
+	- Added math intrinsics to libcgc.a
+	- Additional example challenge binaries
+		- CADET_00001: Simple Palindrome service
+		- EAGLE_00004: Tribute to DEFCON CTF (IPC example)
+		- KPRCA_00001: Gopher-like server
+		- KPRCA_00003: Image compression
+		- YAN01_00002: Tennis ball motion calculator
+
+June 2014: Original Cyber Grand Challenge Release
