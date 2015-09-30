@@ -1,0 +1,15 @@
+cgc-release-documentation (7667-cfe-rc2) UNRELEASED; urgency=low
+
+  [ Vagrant User ]
+  * Update schedule and provide walkthrough for challenge binary authors
+
+  [ Brian Caswell ]
+  * build
+
+ -- Brian Caswell <bmc@lungetech.com>  Tue, 29 Sep 2015 14:58:36 +0000
+
+cgc-release-documentation (1.0) unstable; urgency=low
+
+  * Initial Release.
+
+ -- bmc <bmc@lungetech.com>  Thu, 17 Apr 2014 16:45:08 -0400

@@ -1,0 +1,477 @@
+                 Proof of Vulnerability Markup Langauge
+                      draft-darpa-cfepov-markup-01
+
+Abstract
+
+   The DARPA Cyber Grand Challenge (CGC) seeks to improve the state of
+   the art in automated detection and patching of software flaws.  As
+   part of the CGC, automated reasoning systems are required to emit a
+   "proof of vulnerability" (PoV) against flawed software as a means of
+   demonstrating deep knowledge of each flaw that is discovered.  A
+   valid PoV describes a sequence of actions that a verifying
+   application may carry out in order to reliably recreate the
+   conditions under which a vulnerable software application may be
+   demonstrated to contain a flaw.
+
+   The Proof of Vulnerability Markup Language (POVML) is a simple markup
+   language used to create PoV specifications that are platform,
+   language, and verifier independent.  POVML documents are XML
+   documents with semantics that are capable of expressing a sequence of
+   actions that may be required to demonstrate a PoV in a CGC Challenge
+   Binary (CB).
+
+Table of Contents
+
+   1.  Introduction
+   2.  Document Structure
+     2.1.  The cfepov Element
+     2.2.  The cbid Element
+     2.3.  The seed Element
+     2.4.  The replay Element
+     2.5.  The negotiate Element
+     2.6.  The decl Element
+     2.7.  The substr Element
+     2.8.  The read Element
+     2.9.  The match Element
+     2.10. The write Element
+     2.11. The length Element
+     2.12. The delim Element
+     2.13. The delay Element
+     2.14. The timeout Element
+     2.15. The data Element
+     2.16. The submit Element
+   3.  Security Considerations
+   4.  References
+   Appendix A.  The cfepov DTD
+
+1.  Introduction
+
+   The Proof of Vulnerability Markup Language (POVML) is a simple data
+   format used to specify a sequence of actions to be carried out in
+   proving the existence of a software flaw in a DARPA Cyber Grand
+   Challenge Binary.  POVML is designed to be easy for automated systems
+   to emit and easy for automated systems to consume in the process of
+   verifying the existence of a flaw.
+
+2.  Document Structure
+
+2.1.  The cfepov Element
+
+   The "cfepov" element is the top level element in a POVML document.  A
+   "cfepov" element consists of a single "cbid" element, an optional
+   "seed" element and a single "replay" element.
+
+2.2.  The cbid Element
+
+   The "cbid" element identifies the name of the challenge binary for
+   which this POVML document specifies a series of replay interactions
+   to carry out.  A conforming PoV verifier implementation will
+   communicate with the identified CGC binary while carrying out the
+   actions specified in this replay specification.
+
+2.3.  The seed Element
+
+   The "seed" element is used to specify a prng seed to be used in
+   initializing the CB or RB against which the poll will be executed.  A
+   valid prng seed is a string of 96 hexadecimal digits.  When the
+   optional "seed" element is omitted, a conforming PoV verifier may
+   choose a random 48 byte value as the prng seed for a given poll
+   attempt.  The "seed" element, if present, is used for polls only.
+   The "seed" element is ignored for PoV attempts.
+
+2.4.  The replay Element
+
+   The "replay" element contains a list of actions to be performed by a
+   conforming PoV verifier that allows the player to mimic the actions
+   required to demonstrate a proof of vulnerability.  The "replay"
+   element consists of a "negotiate" element, one or more "decl",
+   "read", "write", and "delay" elements ordered as they should be
+   carried out by the PoV player, and a single, optional "submit"
+   element.
+
+2.5.  The negotiate Element
+
+   The "negotiate" element indicates the type of pov that is being
+   carried out and, if necessary, causes the replay tool to carry out a
+   value negotiation with the competition framework using input
+   parameters supplied by the pov autho.  The "negotiate" element
+   consists of either a "type1" element or a "type2" element that
+   indicate the type of pov that is being carried out.
+
+   The "type1" element is used to specify a type I pov in which the pov
+   will demonstrate control over a target binary's instruction pointer
+   and one additional general purpose register to a degree of precision
+   negotiated with the competition framework.  A successful type I pov
+   must result in the target binary faulting at the negotiated
+   instruction pointer address with one additional general purpose
+   register containing the second negotiated value.  The "type1" element
+   consists of an "ipmask" element and a "regmask" element.
+
+   The "ipmask" element is used to specify a mask of 32-bits that the
+   pov asserts it can control in the target binary's instruction
+   pointer.  In order to be considered valid, at least 20 bits in the
+   mask must be set.  An invalid mask will result in a failed pov
+   attempt.  A valid mask will cause the pov player to negotiate an
+   instruction pointer value at which the target binary must fault.  The
+   negotiated value may be referred to within the pov specification
+   using the variable (see "var" element) TYPE1_IP.  The TYPE1_IP
+   variable will be treated as a read only variable by the replay
+   utility.
+
+   The "regmask" element is used to specify a mask of 32 bits that the
+   pov asserts it can control in one of the target binary's general
+   purpose registers.  In order to be considered valid, at least 20 bits
+   in the mask must be set.  An invalid mask will result in a failed pov
+   attempt.  A valid mask will cause the pov player to negotiate a
+   general purpose register value which must be found at least one
+   general purpose register within the target binary's register state at
+   the time of a successful fault at the negotiated instruction pointer
+   location.  The negotiated value may be referred to within the pov
+   specification using the variable (see "var" element) TYPE1_REG.  The
+   TYPE1_REG variable will be treated as a read-only variable by the
+   replay utility.
+
+   The "regnum" element is used to specify a the register that will
+   contain the negotiated register value that conforms to the provided
+   regmask.  This element is expressed as an integer in the range 0..7.
+   The following meanings hold:
+
+   0 - eax
+   1 - ecx
+   2 - edx
+   3 - ebx
+   4 - esp
+   5 - ebp
+   6 - esi
+   7 - edi
+
+   The "type2" element is used to specify a type II pov in which the pov
+   will demonstrate an ability to read the content of a memory region
+   whose location and size shall be specified by the competition
+   framework.  The "type2" element is an empty element whose presence
+   will cause the pov player to negotiate the location and size of a
+   memory region to be read with the competetion framework.  Following
+   this negotiation, the pov player shall create read-only variables
+   TYPE2_ADDR, TYPE2_SIZE, and TYPE2_LENGTH which may be referred to
+   within the pov specification.
+
+   A type II pov is required to read at least TYPE2_LENGTH bytes of data
+   from anywhere within the memory address range
+   [TYPE2_ADDR:TYPE2_ADDR+TYPE2_SIZE).  A type II pov specification is
+   required to set the variable TYPE2_VALUE to hold the content that the
+   pov was able to read from the specified memory reagion.  At the
+   conclusion of the pov execution, the value contained in TYPE2_VALUE
+   shall be submitted by the pov player to the competition framework to
+   determine the correctness of the result.
+
+2.6.  The decl Element
+
+   The presence of a "decl" element causes a PoV player to allocate and
+   initialize a replay variable which may be referred to in "write"
+   actions and "match" expressions where the variable's value will be
+   substituted in lieu of a variable placeholder (a "var" element).
+   Replay variables behave like and are used in a manner similar to
+   traditional shell environment variables.  The value associated with
+   any undefined variable is "".  The "decl" element consists of a "var"
+   element that names a variable and a "value" element that provides the
+   initial value for the variable.  The definition of the "value"
+   element allows for the use of existing variables in defining the
+   value of new variables.
+
+   The "var" element is used to specify the name of the replay variable.
+   A valid name must begin with a letter or an underscore and may be
+   followed by any sequence of letters digits and underscores.  A POV
+   replay takes place within a single namespace.  All references to the
+   same variable name act on a single copy of that variable.  Variable
+   names may be referenced, following initial assignment, within "write"
+   elements, "match" elements and "value" elements.  When occuring as a
+   child within one of these three element types the string
+   <var>name</var> is replaced at replay time with the current value of
+   the named variable.  The "value" element is used to assign a value to
+   a POV variable.  The "value" element may contain one or more "data",
+   "var", or "substr" elements which are concatenated at replay time to
+   form the value for the associated variable.
+
+2.7.  The substr Element
+
+   The "substr" element is used to select a substring of a previously
+   declared variable.  The "substr" element consists of a "var" element
+   that names the variable from which the substring shall be taken, an
+   optional "begin" element and an optional "end" element.  The "begin"
+   and "end" elements are used to specify zero based, integer indicies
+   into the named "var" representing the start index (inclusive) and end
+   index (exclusive) of the selected substring.  A missing "begin"
+   element implies a start index of "0".  A missing "end" element
+   implies an end index of len(var).  Negative indicies may be supplied
+   and represent offsets from the end of the string.  An offset of -N
+   equated to the index len(var)-N. In the event that "var" is
+   undeclared, or the end index precedes the begin index, the "substr"
+   operation shall result in an empty string.
+
+2.8.  The read Element
+
+   The presence of a "read" element causes a PoV player to receive data
+   that has been transmitted to standard output by the target challenge
+   binary with which the PoV player is communicating.  The "read"
+   element consists of a mandatory "length" element or "delim" element,
+   an optional "assign" element, an optional "match" element, and an
+   optional "timeout" element.
+
+   The "length" and "delim" elements are used to indicate the amount of
+   data to be received.  The "length" element is used to specify the
+   exact amount of data to read.  While the "delim" element is used to
+   specify a delimiter sequence that marks the end of the current input.
+
+   The optional "assign" element may be used to assign some or all of
+   the returned read data into a variable.  If the variable has not been
+   previously defined, the assign element serves as the defining
+   instance for the variable named in the required "var" sub-element.
+   Refer to the "var" element above for variable naming conventions.  An
+   "assign" element must also include either a "slice" or a "pcre"
+   child.  The "slice" element is an empty element used to specify a
+   Python style slice.  The slice element has optional "begin" and "end"
+   attributes used to specify indicies into the data from which the
+   assignment is being made.  The default value for the "begin"
+   attribute is zero, while the default value for the "end" attribute is
+   the end of the received data.  Negative indices represent offsets
+   from the end of the data.  The "begin" value is inclusive, while the
+   "end" value is exclusive.  Unlike Python, one byte slices must
+   specify both a begin and an end value in order to overide end's
+   default value of end of data.  The following provide examples of
+   valid slice elements.
+
+   <slice begin="3" end="5"></slice>
+   <slice begin="10" />
+   <slice end="10" />
+   <slice end="-1" />
+
+   A "pcre" element, when present specifies a Perl Compatible Regular
+   Expression used to match some or all of the received data.  A
+   optional "group" attribute, which defaults to zero, may be specified
+   to assign from a specific matching group within the pcre.  Failure to
+   match the entire expression constitutes a match or assign failure.
+   Failure to extract the specified group also constitutes a match or
+   assign failure.
+
+   The optional "match" element (see below) may be used to specify
+   required content for any received data.  The optional "timeout"
+   element may be used to specify a maximum time in milliseconds that a
+   PoV player should wait to receive any available data.
+
+   The "read" element may contain a single "echo" attribute whose value
+   must be either "no" (default), "yes", or "ascii".  If the "echo"
+   attribute is set to "yes", a PoV player must echo the data returned
+   by the read operation to the PoV player's local console as a hex
+   encoded ascii string.  If the "echo" attribute is set to "ascii", a
+   PoV player must echo the data returned by the read operation to the
+   PoV player's local console as an ascii string.
+
+2.9.  The match Element
+
+   A "match" element is composed of one or more "var", "data", and/or
+   "pcre" elements.  A "data" element is used to specify static matching
+   content.  A "var" element is used to match against a previously
+   initialized (via "decl" or "assign") stored variable.  A "pcre"
+   element is used to match against a Perl compatible regular
+   expression.  Successful matching requires an exact match of any
+   returned "read" data against the concatenation of all supplied
+   "match" sub-elements ("var"/"data"/"pcre").  The ordering of "match"
+   child elements dictates the order in which returned "read" data will
+   be consumed and compared against specified "match" crtiteria.
+   Authors must be cognizant of the impact that a "pcre" match may have
+   on the consumption of "read" data and the resulting effects on any
+   subsequent matching criteria.  For example the following match will
+   fail
+
+   <match>
+      <pcre>[a-z]+</pcre>
+      <data>foo</data>
+   </match>
+
+   because the "data" content "foo" will be consumed as part of the
+   preceding "pcre".
+
+   A "match" element may specify an "invert" attribute whose value may
+   be either "false" (default) or "true".  When invert="true" an inverse
+   match is performed in which case the match expression must NOT match
+   the returned read data in order for the match operation to succeed.
+   Within a match element a "data" expression may be specified as either
+   "hex", "asciic".  A "hex" format data element specifies a sequence of
+   ASCII encoded hex values (such as: f7b3820A1C) that read data must
+   match exactly.  An "asciic" format data element specifies an ASCII
+   string that may contain a limited set of C style escape sequences as
+   described below.  This string must be an exact match against the data
+   that is read.
+
+2.10.  The write Element
+
+   The "write" element consists of one or more "data" and/or "var"
+   elements that are concatenated before being transmitted to the target
+   challenge binary in a single operation. "data" elements are copied
+   verbatim while "var" elements are expanded by substituting the value
+   of a previously defined variable.  If multiple independent write
+   operations are desired, then multiple "write" elements should be
+   specified in sequence the PoV specification.
+
+   The "write" element may contain a single "echo" attribute whose value
+   must be either "no" (default) or "yes" or "ascii".  If the "echo"
+   attribute is set to "yes", a PoV player must echo the data returned
+   by the read operation to the PoV player's local console as a hex
+   encoded ascii string.  If the "echo" attribute is set to "ascii", a
+   PoV player must echo the data returned by the read operation to the
+   PoV player's local console as an ascii string.
+
+2.11.  The length Element
+
+   The "length" element is used to specify the amount of data to read
+   from a target application by a PoV player.  A "isvar" attribute is
+   used to specify whether the value of the element is to be interpreted
+   as an integer ("false") length or as a variable name ("true").  If
+   the length field names a variable, then the value of the variable is
+   obtained by dereferencing the named variable as an unsigned integer.
+   Roughly equivalent to:
+
+      unsigned int readLen = *(unsigned int*)getenv(varName);
+
+   where varName has been assigned an integer value in a preceding
+   element within the PoV.
+
+2.12.  The delim Element
+
+   The "delim" element is used to specify a delimiter sequence in data
+   read from a target application by a PoV player.  A "format" attribute
+   is used to specify whether the value of the element is to be
+   interpreted as "asciic" data or "hex" encoded binary data.
+
+2.13.  The delay Element
+
+   The "delay" element instructs a PoV player to pause for a specified
+   number of milliseconds before processing the next replay element.
+
+2.14.  The timeout Element
+
+   The "timeout" element specifies a timeout value in milliseconds.
+
+2.15.  The data Element
+
+   The "data" element is used to specify data to be written or matched
+   by a PoV player.  A "format" attribute is used to specify whether the
+   value of the element is to be interpreted as "asciic" data or "hex"
+   encoded binary data.
+
+   Data in "asciic" format is unquoted and may contain the following C
+   style escape sequences:
+
+   \t TAB
+
+   \n LF
+
+   \r CR
+
+   \xNN Two digit hex escape
+
+2.16.  The submit Element
+
+   The "submit" element consists of a single "var" element used to
+   inform the pov player which variable's content contains the private
+   data that the pov has managed to obtain from the target binary.  The
+   "submit" element is used to submit type II pov data, obtained during
+   the execution of the pov, to the competition framework.  If a
+   "submit" element is present in a type II pov, then the pov player
+   will submit the content of the named variable to the competition
+   framework for judging whether the pov was successful or not.  If the
+   "submit" element is omitted in a type II pov, then the pov player
+   will submit the content of the TYPE2_VALUE variable to the
+   competition framework for judging whether the pov was successful or
+   not.
+
+3.  Security Considerations
+
+   Implementors of PoV players should take care to validate all PoV
+   files which they consume against the cfepov DTD (see below).  Players
+   should make use of default timeouts or alarms in order to avoid
+   indefinite waits in the event that a PoV specification fails to
+   specify read timeouts.
+
+4.  References
+
+   [darpa_cgc]
+              Defense Advanced Research Projects Agency, "DARPA Cyber
+              Grand Challenge", October 2013,
+              <http://www.darpa.mil/cybergrandchallenge/>.
+
+Appendix A.  The cfe-pov DTD
+
+   <!ELEMENT cfepov (cbid,seed?,replay)>
+   <!ELEMENT cbid (#PCDATA)>
+   <!ELEMENT seed (#PCDATA)>  <!-- 96 hex digits -->
+
+   <!--
+      replay specifies the sequence of actions to carry out
+   -->
+   <!ELEMENT replay (negotiate, (decl | write | read | delay)+, submit?)>
+
+   <!ELEMENT negotiate (type1 | type2)>
+
+   <!ELEMENT type1 (ipmask, regmask, regnum)>
+
+   <!ELEMENT ipmask (#PCDATA)>  <!-- base 10 or base 16 integer. Base 16 integers must be prefixed with "0x" -->
+   <!ELEMENT regmask (#PCDATA)> <!-- base 10 or base 16 integer. Base 16 integers must be prefixed with "0x" -->
+   <!ELEMENT regnum (#PCDATA)> <!-- 0..7 [eax,ecx,edx,ebx,esp,ebp,esi,edi] -->
+
+   <!ELEMENT type2 EMPTY>
+
+   <!ELEMENT submit (var)>
+
+   <!ELEMENT decl (var,value)>
+   <!ELEMENT value (data | var | substr)+>
+   <!ELEMENT substr (var, begin?, end?)>  <!-- missing begin implies 0, missing end implies len(var) -->
+   <!ELEMENT begin (#PCDATA)>
+   <!ELEMENT end (#PCDATA)>
+
+   <!ELEMENT length (#PCDATA)>
+
+   <!-- timeout values are in milliseconds -->
+   <!ELEMENT timeout (#PCDATA)>
+
+   <!--
+     allow 1 or more data elements in write to make it
+     easier for humans to hand craft mixed ascii/hex data blocks
+     all data elements are concatenated and written in a single
+     operation
+   -->
+   <!ELEMENT write (data | var)+>
+
+   <!ELEMENT read ((length | delim),match?,assign?,timeout?)>
+   <!ELEMENT delay (#PCDATA)>
+   <!-- match could be a regex for example -->
+   <!ELEMENT match (data | var | pcre)+>
+   <!ELEMENT delim (#PCDATA)>
+   <!ELEMENT data (#PCDATA)>
+   <!ELEMENT assign (var,(slice | pcre))>
+   <!ELEMENT var (#PCDATA)>
+   <!ELEMENT pcre (#PCDATA)>
+
+   <!ELEMENT slice EMPTY>
+   <!ATTLIST slice begin CDATA "0">
+   <!ATTLIST slice end CDATA #IMPLIED>
+
+   <!--
+      The echo attribute is intended as a debugging feature. When
+      echo="yes", the replay utility should echo any data returned
+      from a read operation to the local (replay) console
+   -->
+   <!ATTLIST read echo (yes|no|ascii) "no">
+   <!ATTLIST write echo (yes|no|ascii) "no">
+
+   <!ATTLIST length isvar (false|true) "false">
+   <!ATTLIST delim format (asciic|hex) "asciic">
+   <!ATTLIST value format (asciic|hex) "asciic">
+   <!ATTLIST data format (asciic|hex) "asciic">
+   <!ATTLIST match invert (false|true) "false">
+   <!ATTLIST pcre group CDATA "0">
+
+   <!-- make whitspace matter in some elements -->
+   <!ATTLIST data xml:space (preserve) #FIXED "preserve">
+   <!ATTLIST delim xml:space (preserve) #FIXED "preserve">
+   <!ATTLIST pcre xml:space (preserve) #FIXED "preserve">

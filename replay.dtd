@@ -1,0 +1,60 @@
+<!ELEMENT pov (cbid, seed?, replay)>
+<!ELEMENT cbid (#PCDATA)>
+<!ELEMENT seed (#PCDATA)>  <!-- 96 hex digits -->
+
+<!-- 
+   replay specifies the sequence of actions to carry out
+-->
+<!ELEMENT replay (decl | write | read | delay)+>
+
+<!ELEMENT decl (var,value)>
+<!ELEMENT value (data | var | substr)+>
+<!ELEMENT substr (var, begin?, end?)>  <!-- missing begin implies 0, missing end implies len(var) -->
+<!ELEMENT begin (#PCDATA)>
+<!ELEMENT end (#PCDATA)>
+
+<!ELEMENT length (#PCDATA)>
+
+<!-- timeout values are in milliseconds -->
+<!ELEMENT timeout (#PCDATA)>
+
+<!--
+  allow 1 or more data elements in write to make it 
+  easier for humans to hand craft mixed ascii/hex data blocks
+  all data elements are concatenated and written in a single 
+  operation
+-->
+<!ELEMENT write (data | var)+>
+
+<!ELEMENT read ((length | delim),match?,assign?,timeout?)>
+<!ELEMENT delay (#PCDATA)>
+<!-- match could be a regex for example -->
+<!ELEMENT match (data | var | pcre)+>
+<!ELEMENT delim (#PCDATA)>
+<!ELEMENT data (#PCDATA)>
+<!ELEMENT assign (var,(slice | pcre))>
+<!ELEMENT var (#PCDATA)>
+<!ELEMENT pcre (#PCDATA)>
+
+<!ELEMENT slice EMPTY>
+<!ATTLIST slice begin CDATA "0">
+<!ATTLIST slice end CDATA #IMPLIED>
+
+<!--
+   The echo attribute is intended as a debugging feature. When
+   echo="yes", the replay utility should echo any data returned
+   from a read operation to the local (replay) console
+-->
+<!ATTLIST read echo (yes|no|ascii) "no">
+<!ATTLIST write echo (yes|no|ascii) "no">
+
+<!ATTLIST delim format (asciic|hex) "asciic">
+<!ATTLIST value format (asciic|hex) "asciic">
+<!ATTLIST data format (asciic|hex) "asciic">
+<!ATTLIST match invert (false|true) "false">
+<!ATTLIST pcre group CDATA "0">
+
+<!-- make whitspace matter in some elements -->
+<!ATTLIST data xml:space (preserve) #FIXED "preserve">
+<!ATTLIST delim xml:space (preserve) #FIXED "preserve">
+<!ATTLIST pcre xml:space (preserve) #FIXED "preserve">
