@@ -1,0 +1,15 @@
+cgc-release-documentation (9130-cfe-rc4) UNRELEASED; urgency=low
+
+  [ Vagrant User ]
+  * Update schedule and provide walkthrough for challenge binary authors
+
+  [ Brian Caswell ]
+  * build
+
+ -- Brian Caswell <bmc@lungetech.com>  Thu, 03 Mar 2016 03:50:09 +0000
+
+cgc-release-documentation (1.0) unstable; urgency=low
+
+  * Initial Release.
+
+ -- bmc <bmc@lungetech.com>  Thu, 17 Apr 2014 16:45:08 -0400
