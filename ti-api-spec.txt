@@ -1,0 +1,523 @@
+Cyber Grand Challenge Working Group                             T. Vidas
+DARPA-Draft                                                         0x90
+Intended status: Experimental                                   C. Eagle
+Expires: August 31, 2016                                             NPS
+                                                            July 1, 2015
+
+
+                        CRS Team Interface API
+                        draft-darpa-ti-api-01
+
+Abstract
+
+   In the DARPA Cyber Grand Challenge (CGC) Final Event (CFE) each Cyber
+   Reasoning System (CRS) will communicate with the CFE infrastructure
+   via a Team Interface.  The Team Interface is the only mechanism for
+   a CRS to provide input to CFE, and also the primary interface for 
+   retrieving data about CFE.  For example, the Team Interface API is 
+   used by a CRS to field replacement CBs, to obtain current scores, and
+   to download IDS rules for consensus evaluation.
+
+   This document describes the Team Interface API.  
+
+
+Table of Contents
+
+   1.  Introduction
+   2.  Submission of data (HTTP POST)
+     2.1.  CBs
+     2.2.  POVs
+     2.3.  IDS rules
+   3.  Retrieval of data (HTTP GET)
+     3.1.  CFE status
+     3.2.  Feedback information
+       3.2.1  POV feedback
+       3.2.2  CB feedback
+       3.2.3  Poll feedback
+     3.3.  Consensus evaluation
+       3.3.1  CB consensus evaluation
+       3.3.2 IDS consensus evaluation
+   4.  References
+   Appendix A.  Acknowledgments
+   Authors' Addresses
+
+1.  Introduction
+
+   The API employs HTTP with digest authentication.
+
+   Acronyms used throughout this document:
+
+   CS     - Challenge Set
+   CSID   - Challenge Set ID
+   CBID   - Challenge Binary ID (multi-CB CSs may have more than one)
+   NNN    - a base 10 integer containing at least 1 character
+   TEAMID - a CFE team identifier
+
+2.  Submission of data (HTTP POST)
+
+   All HTTP POSTs shall be "Content-Type: multipart/form-data".
+
+   POSTs that replace data (as is the case for Fielding new CBs, IDS
+   rules, etc) will only be accepted for currently installed CSs.
+
+   Success codes are returned to the CRS indicating that CFE 
+   infrastructure has received data.
+
+2.1.  CBs
+
+   Replaces a team's fielded CBs.
+
+   Each POST replaces one or more CBs for one CS.
+
+   Parameters:
+   1)Content-Disposition: form-data; name="csid"
+     the CSID associated with the CB(s) to be replaced
+
+   2)Content-Disposition: form-data; name="CBID"; filename="???"
+     Content-Type: application/octet-stream
+     the binary contents of the replacement CB
+       CBID is replaced with the name of the specific CB within the 
+       challenge set to be replaced.
+       ??? is a local filename selected by the CRS which may or may not
+       be used by the competition infrastructure
+
+       For multi-binary challenge sets, multiple files may be uploaded
+       in a single post
+
+   Examples:
+     curl -F CADET_00001=@CADET_00001_new -F csid=CADET_00001 \
+          http://<team_interface>/rcb
+     curl -F LUNGE_00003_1=@file1 -F LUNGE_00003_2=@file2 \
+          -F LUNGE_00003_3=@file3  -F csid=LUNGE_00003 \
+          http://<team_interface>/rcb
+     curl --digest -u user:password -F 111_1=@my_rcb -F csid=111 \
+          http://<team_interface>/rcb
+
+   Response codes:
+     200 - Upload accepted. Content body shall be a JSON document in 
+           the following format. "round" indicates the round in which 
+           the submission is considered to have been accepted.  A list 
+           of file names and associated sha256 hashes are also supplied
+           to allow a CRS to confirm successful submission.
+           {
+              "round" : NNN,
+              "files" : [
+                 {"file":"NAME","hash":"HASH","valid":"yes"},
+                 ...
+                 {"file":"NAME","hash":"HASH","valid":"yes"}
+              ]
+           }
+
+           NAME - the basename of the file uploaded
+           HASH - a sha256 calculated over the content of the file
+
+     400 - Upload rejected. Content body shall be a JSON document in 
+           the following format. Where "message" is one of the 
+           following:
+              "malformed request" (e.g. additional or incorrect 
+                                   parameters given),
+              "invalid csid",
+              "invalid cbid" (bad name),
+              "duplicate cbid" (same name used more than once),
+              "invalid format" (one or more binaries is not a valid 
+                               CGC binary)
+           A list of file names and associated sha256 hashes are also o
+           supplied to allow a CRS to detect a corrupted submission.
+           {
+              "error" : [ "message", ..., "message"],
+              "files" : [
+                 {"file":"NAME","hash":"HASH","valid":"YESNO"},
+                 ...
+                 {"file":"NAME","hash":"HASH","valid":"YESNO"}
+              ]
+           }
+
+           NAME - the basename of the file uploaded
+           HASH - a sha256 calculated over the content of the file
+           YESNO is either "yes" or "no"
+
+2.2.  POVs
+
+   Replaces a team's fielded POVs.
+
+   Each POST affects a POV associated with one CS and one opponent.
+
+   Only CB POVs are accepted (not XML).
+
+   Parameters:
+   1)Content-Disposition: form-data; name="csid"
+     the CSID of the CS that POV targets
+
+   2)Content-Disposition: form-data; name="team"
+     ASCII integer of team the pov is meant to target
+
+   3)Content-Disposition: form-data; name="throws"
+     ASCII integer between 0 and MAX_THROWS indicating how many times
+     CFE infrastructure should throw this PoV per round.  The value 0 indicates
+     the POV should not be thrown.
+
+   4)Content-Disposition: form-data; name="file"; filename="???"
+     Content-Type: application/octet-stream
+     the binary contents of the PoV CB
+     ??? is a local filename selected by the CRS which may or may not be
+     used by the competition infrastructure
+
+
+   Examples:
+     curl -F file=@my_pov -F csid=CADET_00001 -F team=5 -F \
+          throws=6 http://<team_interface>/pov
+     curl --digest -u user:password -F file=@my_pov -F csid=321 -F \
+          throws=5 -F team=2 http://<team_interface>/pov
+
+   Response codes:
+     200 - Upload accepted. Content body shall be a JSON document in 
+           the following format. "round" indicates the round in which 
+           the submission is considered to have been accepted.  The 
+           file name and associated sha256 hash is also returned to 
+           allow a CRS to confirm successful submission.
+           {
+              "round" : NNN,
+              "file":"NAME",
+              "hash":"HASH"
+           }
+
+           NAME - the basename of the file uploaded
+           HASH - a sha256 calculated over the content of the file
+
+     400 - Upload rejected. Content body shall be a JSON document in 
+           the following format. Where "message" is one of the 
+           following:
+              "malformed request" (e.g. additional or incorrect 
+                                   parameters given),
+              "invalid csid",
+              "invalid team" (team is self or out of range),
+              "invalid throws",
+              "invalid format" (the supplied binary is not a valid CGC 
+                                binary)
+           The file name and associated sha256 hash is also returned to
+           allow a CRS to confirm successful submission.
+           {
+              "error" : [ "message", ..., "message"],
+              "file":"NAME",
+              "hash":"HASH"
+           }
+
+           NAME - the basename of the file uploaded
+           HASH - a sha256 calculated over the content of the file
+
+2.3.  IDS rules
+
+   Replaces a team's fielded IDS rules on the network appliance.
+
+   Each post replaces the rules (entire set) associated with one CS.
+
+   Parameters:
+   1)Content-Disposition: form-data; name="csid"
+     the CSID of the CS associated with the IDS rules to be replaced
+
+   2)Content-Disposition: form-data; name="file"; filename="???"
+     Content-Type: application/octet-stream
+     the contents of the filter file
+     ??? is a local filename selected by the CRS which may or may not 
+     be used by the competition infrastructure
+
+   Examples:
+     curl -F file=@my_filter.ids -F csid=CADET_00001 \
+          http://<team_interface>/ids
+     curl --digest -u user:password -F file=@foo.ids -F csid=123 \
+          http://<team_interface>/ids
+
+   Response codes:
+     200 - Upload accepted. Content body shall be a JSON document in 
+           the following format. "round" indicates the round in which 
+           the submission is considered to have been accepted.  The 
+           file name and associated sha256 hash is also returned to 
+           allow a CRS to confirm successful submission.
+           {
+              "round" : NNN,
+              "file":"NAME",
+              "hash":"HASH"
+           }
+
+           NAME - the basename of the file uploaded
+           HASH - a sha256 calculated over the content of the file
+
+     400 - Upload rejected. Content body shall be a JSON document in 
+           the following format. Where "message" is one of the 
+           following:
+              "malformed request" (e.g. additional or incorrect 
+                                   parameters given),
+              "invalid csid",
+              "invalid format" (the supplied binary is not a valid CGC 
+                                filter)
+           The file name and associated sha256 hash is also returned to
+           allow a CRS to confirm successful submission.
+           {
+              "error" : [ "message", ..., "message"],
+              "file":"NAME",
+              "hash":"HASH"
+           }
+
+           NAME - the basename of the file uploaded
+           HASH - a sha256 calculated over the content of the file
+   
+3.  Retrieval of data (HTTP GET)
+
+   This is the main mechanism by which a CRS obtains information about
+   CFE.
+
+3.1.  CFE status
+
+   CFE status is accessed at /status
+
+   This provides feedback about the status of CFE, including the current
+   round.  This is the only indication a CRS has regarding the current
+   round.
+
+   Examples:
+     curl --digest -u user:password http://<team_interface>/status
+
+   Response:
+     {
+       "round": NNN,
+       "scores": [
+         {"team:"TEAMID", "rank":NNN, "score":NNN},
+         {"team:"TEAMID", "rank":NNN, "score":NNN},
+         ...
+         {"team:"TEAMID", "rank":NNN, "score":NNN},
+         {"team:"TEAMID", "rank":NNN, "score":NNN},
+       ]
+     }
+
+    Rank is reported as an integer, lower ranks indicate higher
+    placing teams.
+   
+3.2.  Feedback information
+
+   Feedback is provided in JSON format on a per-round basis.
+
+   Each round is accessible by integer as in /round/NNN/feedback.
+
+3.2.1  POV feedback
+
+   POV feedback is accessed at /round/NNN/feedback/pov.
+
+   For each POV fielded by the requesting CRS, the status of the POV is
+   reported as success or fail.  All POVs installed during the round 
+   will be present in the feedback.
+
+   Examples:
+     curl --digest -u user:password \
+          http://<team_interface>/round/7/feedback/pov
+
+   Response:
+     {
+       "pov": [
+         {"csid":"CSID","team":"TEAMID","throw":NNN,"result":"RESULT"},
+         {"csid":"CSID","team":"TEAMID","throw":NNN,"result":"RESULT"},
+         ...
+         {"csid":"CSID","team":"TEAMID","throw":NNN,"result":"RESULT"},
+         {"csid":"CSID","team":"TEAMID","throw":NNN,"result":"RESULT"}
+       ]
+     }
+
+     NNN is an integer between 1 and MAX_THROWS inclusive.
+     RESULT is "success" or "fail"
+
+3.2.2  CB feedback
+
+   CB feedback is accessed at /round/NNN/feedback/cb.
+
+   For each instantiation of a fielded CB that terminates as the result
+   of a delivered signal, the CSID, CBID, exit timestamp, and signal number
+   shall be provided.
+
+   CB exits not resulting from a signal (e.g. non-crashing exits 
+   resulting in an exit code) are not reported to the CRS.
+
+   Examples:
+     curl --digest -u user:password \
+          http://<team_interface>/round/2/feedback/cb
+
+   Response:
+     {
+       "cb": [
+         {
+           "csid":"CSID",
+           "cbid":"CBID",
+           "timestamp":TTTT,
+           "signal":DDD
+         },
+         {
+           "csid":"CSID",
+           "cbid":"CBID",
+           "timestamp":TTTT,
+           "signal":DDD
+         },
+         ...
+         {
+           "csid":"CSID",
+           "cbid":"CBID",
+           "timestamp":TTTT,
+           "signal":DDD
+         }
+       ]
+     }
+
+     TTTT is a timestamp provided in epoch time as an unsigned integer.
+     DDD is the integer code associated with the signal
+
+3.2.3  Poll feedback
+
+   Poll feedback is accessed at /round/NNN/feedback/poll.
+
+   For each active CSID in the reported round, poll feedback is 
+   reported in form of functionality data and performance data. 
+
+   Functionality data is reported as four percentages, (1) percentage 
+   of successful polls, (2) percentage of polls that failed as a result
+   of a timeout, (3) percentage of polls that failed because a connect 
+   call failed, (4) percentage of polls that failed because a protocol
+   functionality. All percentages are reported as whole integers and may 
+   not sum to 100. Remaining polls are considered to have failed due to 
+   unspecified reasons including functional incorrectness.  
+
+   Performance information is reported as two values, (1) a memory 
+   measurement and (2) a time measurement. These values are reported as
+   percentages relative to the corresponding measurement taken on the 
+   reference CB where a reported result of 100 represents behavior 
+   identical to the reference CB.
+
+   Examples:
+     curl --digest -u user:password \
+          http://<team_interface>/round/2/feedback/poll
+
+   Response:
+     {
+       "poll": [
+         {
+            "csid":"CSID",
+            "functionality":{"success":NNN, "timeout":NNN, 
+               "connect":NNN, "function":NNN},
+            "performance":{"time":MMM, "memory":MMM}
+         },
+         {
+            "csid":"CSID",
+            "functionality":{"success":NNN, "timeout":NNN, 
+               "connect":NNN, "function":NNN},
+            "performance":{"time":MMM, "memory":MMM}
+         },
+         ...
+         {
+            "csid":"CSID",
+            "functionality":{"success":NNN, "timeout":NNN, 
+               "connect":NNN, "function":NNN},
+            "performance":{"time":MMM, "memory":MMM}
+         },
+         {
+            "csid":"CSID",
+            "functionality":{"success":NNN, "timeout":NNN, 
+               "connect":NNN, "function":NNN},
+            "performance":{"time":MMM, "memory":MMM}
+         }
+       ]
+     }
+
+     NNN is an integer between 0 and 100, reflecting percentage.
+     The sum of the values of NNN in a single functionality tuple will 
+     be <= 100.
+
+     MMM is an integer >= 0, reflecting percentage compared to a
+     reference CB.  
+
+3.3.  Consensus evaluation
+
+   Items for consensus evaluation are provided in JSON format on a 
+   per-round basis.
+
+   The format for the consensus URI is:
+        /round/NNN/evaluation/COMPONENT/TEAMID
+   using the following values: 
+      * NNN is the round number
+      * COMPONENT is the item requested (ids or cb)
+      * TEAMID is the team number of the requested information
+
+   URIs for evaluation items shall point into the /dl directory (on 
+   the Team Interface server) which contain the required files.
+
+   An example ABS_PATH follows:
+
+   curl --digest -u user:password http://<team_interface>/dl/CADET_\
+     00001_0e5aea785a642a2847ec0985d937007a1740ac86577b580db24c4ab7\
+     0ddb5699
+
+3.3.1  CB consensus evaluation
+
+   CB evaluation items accessed at /round/NNN/evaluation/cb/TEAMID
+
+   Provides URL where CBs fielded by team identified by TEAMID may be 
+   downloaded.  For multi-cb CSs, each CB is listed.
+
+   Examples:
+     curl --digest -u user:password \
+          http://<team_interface>/round/2/evaluation/cb/4
+
+   Response:
+     {
+       "cb": [
+         {"cbid":"CBID", "hash":"HASH", "csid":"CSID", 
+          "uri":"ABS_PATH"},
+         {"cbid":"CBID", "hash":"HASH", "csid":"CSID", 
+          "uri":"ABS_PATH"},
+         ...
+         {"cbid":"CBID", "hash":"HASH", "csid":"CSID", 
+          "uri":"ABS_PATH"},
+         {"cbid":"CBID", "hash":"HASH", "csid":"CSID", 
+          "uri":"ABS_PATH"}
+       ]
+     }
+
+3.3.2 IDS consensus evaluation
+
+   CB evaluation items are accessed at /round/NNN/evaluation/ids/TEAMID
+
+   Provides URL where IDS rules fielded by team identified by TEAMID 
+   may be downloaded.  
+
+   Examples:
+     curl --digest -u user:password \
+          http://<team_interface>/round/2/evaluation/ids/4
+
+   Response:
+     {
+       "ids": [
+         {"csid":"CSID", "hash":"HASH", "uri":"ABS_PATH"},
+         {"csid":"CSID", "hash":"HASH", "uri":"ABS_PATH"},
+         ...
+         {"csid":"CSID", "hash":"HASH", "uri":"ABS_PATH"},
+         {"csid":"CSID", "hash":"HASH", "uri":"ABS_PATH"},
+     }
+
+4.  References
+
+   [darpa_cgc]
+              Defense Advanced Research Projects Agency, "DARPA Cyber
+              Grand Challenge", October 2013,
+              <http://www.darpa.mil/cybergrandchallenge/>.
+
+Appendix A.  Acknowledgments
+
+Authors' Addresses
+
+   Timothy Vidas
+   0x90 Labs
+
+   Email: tim@0x90labs.com 
+   URI:   http://0x90labs.com/
+
+
+   Christopher S. Eagle
+   Naval Postgraduate School
+   
+   Email: cseagle@nps.edu
+   URI:   http://www.nps.edu/
